@@ -24,6 +24,7 @@ requests = "^2.31.0"
 thop = "^0.1.1.post2209072238"
 gitpython = "^3.1.42"
 seaborn = "^0.13.2"
+jupyter = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
 

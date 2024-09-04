@@ -43,11 +43,15 @@ The orignal neural and behavioral data acquired from the Photographer experiment
         [31] tibble_3.2.0        ggplot2_3.5.1       tidyverse_2.0.0    
         ```
 
+- [AFNI](https://afni.nimh.nih.gov/) for neuroimaging analysis
+
 ## First-level analysis
 
 ### Goal
 
-Run block-/trial-wise GLM, perform searchlight representational similarity analysis (RSA), and conduct one-sample t-tests on individual RSA maps on each subgroup (either Discovery or Validation group)
+- Run block-/trial-wise GLM
+- Perform searchlight representational similarity analysis (RSA)
+- Conduct one-sample t-tests on individual RSA maps.
 
 ### Prerequisites
 
@@ -98,3 +102,27 @@ First-level analysis-related arguments:
   --config-file, --config_file CONFIG_FILE
                         A config file (toml) path. If not specified, we will try to find photographer_config.toml in (bids_dir)/code.
 ```
+
+### Tasks
+
+> Note that the `Order` column represents recommended task orders.
+
+| Order | Task Name | Description |
+| ----- | --------- | ----------- |
+| 1 | `glm.prepare_task_stim` | Prepare task-related GLM regressors from behavioral data. |
+| 2 | `glm.prepare_confound` | Prepare nuisance GLM regressors from fMRIPrep confounds. |
+| 3 | `glm.run_block_wise_glm` | Run block-wise GLM (GLM1) for univariate analysis. |
+| 4 | `glm.run_trial_wise_glm` | Run trial-wise GLM (GLM2) for multivariate (RSA) analysis. |
+| 5 | `mask.prepare_gm_mask` | Prepare a gray matter (GM) mask from the MNI152NLin2009cAsym GM template. |
+| 6 | `behavior.prepare_behavioral_data` | Preprocess behavioral data into a CSV file and include object detection results. |
+| 7 | `rsa.prepare_feedback_neural_data` | Aggregate trial-wise feedback event beta maps from GLM 2 into a numpy array (NPY) file |
+| 8 | `rsa.prepare_feedback_model_rdm` | Prepare feedback history model RDMs from the preprocessed behavioral data. |
+| 9 | `rsa.run_feedback_rsa` | Run searchlight RSA on feedback event beta maps and feedback history model RDMs. |
+| 10 | `stat.run_univariate_ttest` | Conduct t-tests on individual beta maps from GLM 1 (univariate analysis) |
+| 11 | `stat.run_feedback_rsa_ttest` | Conduct t-tests on individual feedback history RSA maps. |
+| 12 | `stat.extract_feedback_rsa_cluster_mask` | Compute corrected cluster masks from feedback history RSA statistical maps. |
+
+### Acknowledgments
+
+- [fMRIPrep GitHub](https://github.com/nipreps/fmriprep) for the BIDS-App structure reference.
+- [Minseok Choi](https://github.com/BigJade-C) originally implemented codes for computing searchlight spheres (`first-level/utils/searchlight.py`).

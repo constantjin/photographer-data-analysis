@@ -25,6 +25,8 @@ thop = "^0.1.1.post2209072238"
 gitpython = "^3.1.42"
 seaborn = "^0.13.2"
 jupyter = "^1.1.1"
+surfplot = "^0.2.0"
+neuromaps = "^0.0.5"
 
 [tool.poetry.dev-dependencies]
 

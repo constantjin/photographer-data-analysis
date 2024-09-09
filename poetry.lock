@@ -214,6 +214,30 @@ webencodings = "*"
 css = ["tinycss2 (>=1.1.0,<1.3)"]
 
 [[package]]
+name = "brainspace"
+version = "0.1.10"
+description = "Cortical gradients and beyond"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "brainspace-0.1.10-py3-none-any.whl", hash = "sha256:6ab0f732bb04134792685200317777243b6f8d6ddc7a8f06558ab6444da93fe6"},
+    {file = "brainspace-0.1.10.tar.gz", hash = "sha256:cea5a454dc4e31b9bdce8d208e155897d98fffcb19cb623c685380977f0c9a57"},
+]
+
+[package.dependencies]
+matplotlib = ">=2.0.0"
+nibabel = "*"
+numpy = ">=1.11.0"
+pandas = "*"
+pillow = "*"
+scikit-learn = ">=0.20.0"
+scipy = ">=0.17.0"
+vtk = ">=8.1.0"
+
+[package.extras]
+test = ["coverage", "coveralls", "matplotlib (>=2.0.0)", "nibabel", "numpy (>=1.11.0)", "pandas", "pillow", "pytest", "pytest-cov", "scikit-learn (>=0.20.0)", "scipy (>=0.17.0)", "vtk (>=8.1.0)"]
+
+[[package]]
 name = "certifi"
 version = "2024.7.4"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -2041,6 +2065,31 @@ extra = ["lxml (>=4.6)", "pydot (>=2.0)", "pygraphviz (>=1.12)", "sympy (>=1.10)
 test = ["pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
+name = "neuromaps"
+version = "0.0.5"
+description = "A toolbox for projecting, resampling, and comparing brain maps"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "neuromaps-0.0.5-py3-none-any.whl", hash = "sha256:dc4613b8092fe254324c13e007a29c8afd5a1dddef7093b91eae7a9f172cd248"},
+    {file = "neuromaps-0.0.5.tar.gz", hash = "sha256:a85959088f419dd5ddeeaa7d79c9e3ed13c281c397c9d55275871435b1e9a6e2"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+nibabel = ">=3.0.0"
+nilearn = "*"
+numpy = ">=1.14.0"
+scikit-learn = "*"
+scipy = ">=0.17"
+
+[package.extras]
+doc = ["sphinx (>=2.0,<7.0.0)", "sphinx-gallery", "sphinx-rtd-theme"]
+nulls = ["brainsmash (>=0.10.0)", "brainspace"]
+style = ["flake8", "ruff"]
+test = ["coverage", "netneurotools", "pytest (>=3.6)", "pytest-cov"]
+
+[[package]]
 name = "nibabel"
 version = "5.2.1"
 description = "Access a multitude of neuroimaging data formats"
@@ -2068,6 +2117,36 @@ style = ["tox"]
 test = ["pytest", "pytest-cov", "pytest-doctestplus", "pytest-httpserver", "pytest-xdist"]
 typing = ["tox"]
 zstd = ["pyzstd (>=0.14.3)"]
+
+[[package]]
+name = "nilearn"
+version = "0.10.4"
+description = "Statistical learning for neuroimaging in Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "nilearn-0.10.4-py3-none-any.whl", hash = "sha256:48a800e6117ebea8a70b2f0a080b16109e225731605c9243ff103e9a27bf9cac"},
+    {file = "nilearn-0.10.4.tar.gz", hash = "sha256:9450bd56a776d997b324f45dd18bf96e89bd8d80160974fcc759333fbaea35c2"},
+]
+
+[package.dependencies]
+joblib = ">=1.0.0"
+lxml = "*"
+nibabel = ">=4.0.0"
+numpy = ">=1.19.0"
+packaging = "*"
+pandas = ">=1.1.5"
+requests = ">=2.25.0"
+scikit-learn = ">=1.0.0"
+scipy = ">=1.8.0"
+
+[package.extras]
+dev = ["nilearn[doc,plotting,style,test]", "pre-commit", "tox"]
+doc = ["furo", "memory-profiler", "myst-parser", "nilearn[plotting]", "numpydoc", "ruamel-yaml", "sphinx", "sphinx-copybutton", "sphinx-design", "sphinx-gallery", "sphinxcontrib-bibtex", "sphinxext-opengraph"]
+plotly = ["nilearn[plotting]"]
+plotting = ["kaleido", "kaleido (==0.1.0.post1)", "matplotlib (>=3.3.0)", "plotly"]
+style = ["black", "blacken-docs", "codespell", "flake8", "flake8-docstrings", "flake8-functions", "flake8-use-fstring", "flynt", "isort", "tomli"]
+test = ["coverage", "pytest (>=6.0.0)", "pytest-cov"]
 
 [[package]]
 name = "nipype"
@@ -3496,6 +3575,28 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
+name = "surfplot"
+version = "0.2.0"
+description = "A package for publication-ready brain surface figures"
+optional = false
+python-versions = ">=3.7.0"
+files = [
+    {file = "surfplot-0.2.0-py3-none-any.whl", hash = "sha256:cec0cc4283406898ef0c92e7c952dddc0f77993a8c05a6ceb9974a556a228ab8"},
+    {file = "surfplot-0.2.0.tar.gz", hash = "sha256:1dd4ae3943860b1756f97e6acb10decc6e0411637a9d3ab4d365c4df99bb7bad"},
+]
+
+[package.dependencies]
+brainspace = ">=0.1.1"
+matplotlib = ">=3.4.2"
+nibabel = "*"
+numpy = ">=1.14.0"
+scipy = ">=0.17"
+vtk = ">=8.1.0"
+
+[package.extras]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "sympy"
 version = "1.13.2"
 description = "Computer algebra system (CAS) in Python"
@@ -3855,6 +3956,47 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "vtk"
+version = "9.3.1"
+description = "VTK is an open-source toolkit for 3D computer graphics, image processing, and visualization"
+optional = false
+python-versions = "*"
+files = [
+    {file = "vtk-9.3.1-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:c41ed344b9cc90ee9dcfc5967815de272985647d0c8e0a57f0e8b4229bc1b0b9"},
+    {file = "vtk-9.3.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:84c04327becc4c4dfe1fb04248baa4b5c480f188a9d52f4b912b163d33622442"},
+    {file = "vtk-9.3.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:890aee533fc0caca70bd1c8a4026b0d7f877518f237cc976ed4fb509d5f1dd83"},
+    {file = "vtk-9.3.1-cp310-cp310-win_amd64.whl", hash = "sha256:b8feed5029486703f4f8f81d8544a30d1788de87dc3396e16a281c343e1ac1cc"},
+    {file = "vtk-9.3.1-cp311-cp311-macosx_10_10_x86_64.whl", hash = "sha256:55e2df9e6993b959b482b79a6d68b8d46397b479d69738d41b1501396fcad50c"},
+    {file = "vtk-9.3.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:c977486b0e4d87cddb3f2c7c0710d1c86243cdd01286cbd036231143d8eb4f6e"},
+    {file = "vtk-9.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f8edc04e0f8b6719cfc769e575a777267d667f447d1948c62fa97fb756cd75bb"},
+    {file = "vtk-9.3.1-cp311-cp311-win_amd64.whl", hash = "sha256:59cc043f611e3eca2870cc50f27e67852a182857de322415e942bdc133594acd"},
+    {file = "vtk-9.3.1-cp312-cp312-macosx_10_10_x86_64.whl", hash = "sha256:05a4b6e387a906e8c8d6844441f9200116e937069fcf81f43e2600f26eb046de"},
+    {file = "vtk-9.3.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:bdbefb1aef9599a0a0b8222c9582f26946732a93534e6ec37d4b8e2c524c627e"},
+    {file = "vtk-9.3.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f728bb61f43fce850d622ced3b3d51b3116f767685ca4e4e0076f624e2d2307d"},
+    {file = "vtk-9.3.1-cp312-cp312-win_amd64.whl", hash = "sha256:685988e09070e06c8605886591698fd42d8225489509b6537a5046cd034cc93e"},
+    {file = "vtk-9.3.1-cp36-cp36m-macosx_10_10_x86_64.whl", hash = "sha256:7b8b8b77b903d5515f2fe551807a6b2ee3e7e3cd112174b184a921ab57352f1e"},
+    {file = "vtk-9.3.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42684f38d8718b918fe1e4fee4e698d564b6daa16215c21811540c383e47dda2"},
+    {file = "vtk-9.3.1-cp36-cp36m-win_amd64.whl", hash = "sha256:4a5de9f424647bc3c02e2d2882401eac8ecd33f1a5f18261dcc69e7a05915c14"},
+    {file = "vtk-9.3.1-cp37-cp37m-macosx_10_10_x86_64.whl", hash = "sha256:279da9aee0fda31ee975e97b7b23480b54ea3b12d24ad8260760a3ededc32fad"},
+    {file = "vtk-9.3.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:102ac70e8dad0b111347f00ccef39aea1771f4f0381a4b0ff3f1ea6539e500c8"},
+    {file = "vtk-9.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:ee95c741a1ec3dc223c8233b1b59c5735c8249d4a15ee0b6370e7b010188397e"},
+    {file = "vtk-9.3.1-cp38-cp38-macosx_10_10_x86_64.whl", hash = "sha256:6adf4b812528a4658667602de8f023400c4381b8166f11b0ea8e0ab83c066539"},
+    {file = "vtk-9.3.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eaf90d0a797b5b7ada3fd0100c072dd146e674a2ccd25411036a4aca676f9101"},
+    {file = "vtk-9.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:872e964c38dc1d969aaa29d10a5e56fd0324d61392e21dc044c679797fbdf0ef"},
+    {file = "vtk-9.3.1-cp39-cp39-macosx_10_10_x86_64.whl", hash = "sha256:3ae62397364be3a40f89025fa844cbf38b422633c0dff1065d90eec74ca6facb"},
+    {file = "vtk-9.3.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:ab96d6923fa37a202874cb8b8b4202d537bd4702bb151638d384e1966d877e3a"},
+    {file = "vtk-9.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:592b303f96b4cf907df7914bbf8c1f374df382c70c1d0b4fa4bd32ac1f4365ce"},
+    {file = "vtk-9.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:6dee68abcd15603ad8ef6cef21fb13e2996d520a16880780abc41eb409dbec0c"},
+]
+
+[package.dependencies]
+matplotlib = ">=2.0.0"
+
+[package.extras]
+numpy = ["numpy (>=1.9)"]
+web = ["wslink (>=1.0.4)"]
+
+[[package]]
 name = "wcwidth"
 version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -3935,4 +4077,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "1b7b0fabd77affd7f355b1ea59734f3afe18fd7ec986bd5233e306ad70117ceb"
+content-hash = "d5be21db66abe1aef37bc346cc4d0c18484f881acce520cb615b313f2ef740bd"

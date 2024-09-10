@@ -1,0 +1,655 @@
+---
+title: "Photographer Behavioral Data Analysis"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+## Goal
+
+- Validation of feedback
+  - To investigate effects of target objects (i.e., Person, Bicycle, and Traffic Light) in captured scenes on feedback scores.
+
+- Validation of learning
+  - To identify effects of time (i.e., task runs or trials) on feedback scores.
+  - Two types of learning effects: Between-run or between-trial learning
+
+## Load libraries/data
+
+```{r}
+knitr::opts_chunk$set(dpi = 300)
+
+library(tidyverse)
+library(easystats)
+library(ggforce)
+library(ggnewscale)
+library(rstatix)
+library(ggpubr)
+library(lmerTest)
+library(broom.mixed)
+library(AICcmodavg)
+library(emmeans)
+library(glue)
+library(slider)
+```
+
+
+```{r}
+# Discovery group behavioral data (acquired in 2022)
+discovery_behavior_df <-
+  read_csv(
+    "./data/behavioral_data/group_2022_behavior_feedback.csv",
+    col_types = cols(
+      subject_id = col_factor(),
+      run = col_factor(ordered = TRUE),
+      city = col_factor(
+        levels = c("New_York", "Boston", "Los_Angeles", "London", "Paris"),
+        ordered = TRUE
+      ),
+      trial = col_factor(ordered = TRUE),
+      feedback_score = col_double(),
+      cosine_similarity = col_double(),
+      person = col_logical(),
+      bicycle = col_logical(),
+      traffic_light = col_logical(),
+    )
+  ) %>%
+  mutate(run = relevel(run, ref = 1),
+         trial = relevel(trial, ref = 1)) %>%
+  group_by(subject_id) %>%
+  mutate(global_trial_index = row_number()) %>% # Add a column tracking global trial indices
+  ungroup()
+
+
+# Validation group behavioral data (2023)
+validation_behavior_df <-
+  read_csv(
+    "./data/behavioral_data/group_2023_behavior_feedback.csv",
+    col_types = cols(
+      subject_id = col_factor(),
+      run = col_factor(ordered = TRUE),
+      city = col_factor(
+        levels = c("New_York", "Boston", "Los_Angeles", "London", "Paris"),
+        ordered = TRUE
+      ),
+      trial = col_factor(ordered = TRUE),
+      # global_trial_index = col_integer(),
+      feedback_score = col_double(),
+      cosine_similarity = col_double(),
+      person = col_logical(),
+      bicycle = col_logical(),
+      traffic_light = col_logical(),
+    )
+  ) %>%
+  mutate(run = relevel(run, ref = 1),
+         trial = relevel(trial, ref = 1)) %>%
+  group_by(subject_id) %>%
+  mutate(global_trial_index = row_number()) %>%
+  ungroup()
+```
+
+
+```{r}
+# Check number of participants in each group
+print(glue('Discovery group n = {length(unique(discovery_behavior_df$subject_id))}'))
+print(glue('Validation group n = {length(unique(validation_behavior_df$subject_id))}'))
+```
+```{r}
+# Define a global theme for visualization
+global_theme <- theme(
+    legend.position = "none",
+    plot.title = element_text(size = 25, hjust = 0.3),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 15),
+    strip.text = element_text(size = 18),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    axis.line = element_line(linewidth = 1, lineend = 'square'),
+    axis.ticks = element_line(linewidth = 1),
+    strip.background = element_blank(),
+    panel.background = element_blank(),
+  )
+```
+
+
+## Validation of feedback 
+
+### Result 1. Absence vs. Presence of target objects in the scene on feedback scores
+
+```{r}
+# Concatenate two subgroup data before the  analysis
+concat_behavior_df <- bind_rows(discovery_behavior_df, validation_behavior_df)
+concat_behavior_long_df <- concat_behavior_df %>%
+  pivot_longer(c("person", "bicycle", "traffic_light"),
+               names_to = "object", values_to = "presence")
+```
+
+
+```{r}
+# Function for the main analysis (to minimize global variables)
+plot_result_1_absent_present <- function() {
+  # Data preparation for visualization
+  data_df <- concat_behavior_long_df %>%
+    filter(object %in% c("person", "bicycle", "traffic_light")) %>%
+    mutate(presence = if_else(presence, "Present", "Absent"),
+           object = case_match(object,
+                               "person" ~ "Person",
+                               "bicycle" ~ "Bicycle",
+                               "traffic_light" ~ "Traffic Light")) %>%
+    mutate(object = factor(object, levels = c("Person", "Bicycle", "Traffic Light"))) %>%
+    group_by(object, presence) %>%
+    mutate(n = n(),
+           label = glue('{presence}\n N = {n}')) %>%
+    ungroup()
+  
+  # Conduct two-sample independent t-tests on each target object
+  # Apply Bonferroni correction (i.e., multiply raw p-values by 3)
+  stat_test <- data_df %>%
+    group_by(object) %>%
+    t_test(feedback_score ~ label, detailed = T) %>%
+    mutate(p.adj = p*3) %>%
+    mutate(p.adj.signif = case_when(
+      p.adj < 0.001 ~ "***",
+      p.adj < 0.01 ~ "**",
+      p.adj < 0.05 ~ "*",
+      p.adj >= 0.05 ~ "ns"
+    )) %>%
+    mutate(y.position = 105)
+  
+  print(stat_test)
+  
+  # Visualize the data using ggplot2
+  data_df %>%
+    ggplot(aes(x = label, y = feedback_score)) +
+    geom_jitter(aes(color = presence), size = 1, alpha = 0.2, width = 0.15, height = 0) + 
+    scale_color_manual(values = c('Absent' = '#bdbdbd', 'Present' = '#93cae1')) +
+    new_scale_color() +
+    stat_summary(aes(color = presence), fun = mean, geom = "crossbar", width = 0.5, linewidth = 0.8) +
+    scale_color_manual(values = c('Absent' = '#636363', 'Present' = '#3182bd')) +
+    stat_pvalue_manual(stat_test, label = "p.adj.signif", label.size = 10, bracket.size = 1.2, tip.length = 0) +
+    labs(x = '', y = "Feedback Score") +
+    scale_y_continuous(breaks = c(0, 25, 50, 75, 100), labels = c(0, 25, 50, 75, 100), limits = c(0, 110)) +
+    facet_wrap(~object, scales = "free") +
+    theme_bw() +
+    global_theme
+}
+```
+
+
+```{r fig.height=4, fig.width=8}
+plot_result_1_absent_present()
+```
+
+```{r}
+ggsave("./output/behavioral_analysis/result_1/absent_present.png", height = 4, width = 8)
+```
+
+
+```{r}
+# Helper function to compute effect size (Cohen's d) from t-tests on each target object
+result_1_absent_present_effect_size <- function() {
+  data_df <- concat_behavior_long_df %>%
+    filter(object %in% c("person", "bicycle", "traffic_light")) %>%
+    mutate(presence = if_else(presence, "Present", "Absent"),
+           object = case_match(object,
+                               "person" ~ "Person",
+                               "bicycle" ~ "Bicycle",
+                               "traffic_light" ~ "Traffic Light")) %>%
+    mutate(object = factor(object, levels = c("Person", "Bicycle", "Traffic Light")))
+  
+  for (entity in c("Person", "Bicycle", "Traffic Light")) {
+    print(glue('{entity}'))
+    
+    test_df <- data_df %>%
+      filter(object == entity)
+    
+    d <- effectsize::cohens_d(feedback_score ~ presence, data = test_df)
+    print(interpret(d, rules = "cohen1988"))
+    print(glue('\n\n'))
+  }
+}
+```
+
+
+```{r}
+result_1_absent_present_effect_size()
+```
+
+### Result 2: ANOVA between the number of target objects and feedback scores
+
+```{r}
+plot_result_2_anova_objects <- function() {
+  data_df <- concat_behavior_df %>%
+    mutate(n_target_raw = person + bicycle + traffic_light) %>% # Count the total number of target objects in each scene
+    mutate(n_target = case_match(n_target_raw,
+                                 0 ~ "No target",
+                                 1 ~ "1 target",
+                                 2 ~ "2 targets",
+                                 3 ~ "3 targets")) %>%
+    mutate(n_target = factor(n_target, levels = c("No target", "1 target", "2 targets", "3 targets"),
+                             ordered = T)) %>%
+    group_by(n_target) %>%
+    mutate(n = n(),
+           label = glue('{n_target}\n N = {n}')) %>%
+    mutate(label = reorder(label, n_target_raw)) %>%
+    ungroup()
+  
+  # Perform one-way ANOVA test
+  stat_test <- data_df %>%
+    anova_test(feedback_score ~ label)
+  
+  print(stat_test)
+  
+  # Post-hoc analysis between independent variables
+  # Resulting p-values are FDR corrected
+  pairwise_test <- data_df %>%
+    t_test(feedback_score ~ label) %>%
+    adjust_pvalue(method = "fdr") %>%
+    add_significance('p.adj')
+  
+  # Note that all pairwise comparisons were significant
+  # But we select 3 comparisons for readability
+  pairwise_annotation <- pairwise_test %>%
+    slice(c(1, 4, 6)) %>%
+    mutate(p.signif = case_when(
+        p.adj < 0.001 ~ "***",
+        p.adj < 0.01 ~ "**",
+        p.adj < 0.05 ~ "*",
+      )) %>%
+    mutate(y.position = c(70, 80, 90))
+  
+  print(pairwise_test)
+  
+  # Compute effect size measure (eta_squared) on the ANOVA model
+  aov_m <- lm(feedback_score ~ label, data = data_df)
+  print(interpret(effectsize::eta_squared(aov_m), 'field2013'))
+  
+  # Visualization
+  data_df %>%
+    ggplot(aes(x = label, y = feedback_score)) +
+    geom_jitter(aes(color = factor(n_target_raw)), size = 1, alpha = 0.2, width = 0.15, height = 0) +
+    scale_color_manual(values = c('0' = '#bdbdbd', '1' = '#a1d99b', '2' = '#9ecae1', '3' = '#bcbddc')) +
+    new_scale_color() +
+    stat_summary(aes(color = factor(n_target_raw)), fun = mean, geom = "crossbar", width = 0.5, linewidth = 0.8) +
+    scale_color_manual(values = c('0' = '#636363', '1' = '#31a354', '2' = '#3182bd', '3' = '#756bb1')) +
+    stat_pvalue_manual(pairwise_annotation, label = "p.signif", label.size = 10, bracket.size = 1.2, tip.length = 0, 
+                       bracket.nudge.y = -0.01) +
+    labs(x = '', y = "Feedback Score") +
+    theme_bw() +
+    global_theme
+}
+```
+
+
+```{r fig.height=4, fig.width=5}
+plot_result_2_anova_objects()
+# R console shows the ANOVA table and effect size estimate
+# The printed dataframe represent post-hoc t-test results
+```
+
+
+```{r}
+ggsave("./output/behavioral_analysis/result_2/anova_n_target_objects.png", height = 4, width = 5)
+```
+
+## Validation of learning
+
+### Result 3: Between-run learning using linear mixed-effect (LME) models
+
+#### Discovery group
+
+```{r}
+plot_result_3_between_run_learning_discovery <- function() {
+  # Two LME models: the null and run-effect models
+  lmer_feedback_0 <- lmer(feedback_score ~ 1 + (1 | trial) + (1 | subject_id), data = discovery_behavior_df, REML = F)
+  lmer_feedback_1 <- lmer(feedback_score ~ 1 + run + (1 | trial) + (1 | subject_id), data = discovery_behavior_df, REML = F)
+  
+  # Check log-likelihood improvement for the run-effect model
+  print(anova(lmer_feedback_0, lmer_feedback_1))
+  
+  # AICc
+  print(
+    aictab(
+      cand.set = list(lmer_feedback_0, lmer_feedback_1),
+      modnames = c("Random Intercept", "Run Effect")
+    )
+  )
+  
+  # Effect size (eta squared)
+  print(anova(lmer_feedback_1))
+  
+  print(glue('\n\n'))
+
+  print(F_to_eta2(2.7175, 4, 616.39))
+
+  print(glue('\n\n'))
+  
+  # Marginal/conditional R2
+  print(r2(lmer_feedback_1))
+  
+  print(glue('\n\n'))
+  
+  # Computing estimated marginal means (emmeans)
+  # Apply pairwise comparisons between runs (FDR corrected)
+  emm <- emmeans(lmer_feedback_1, pairwise ~ run, adjust = "fdr", lmer.df = "satterthwaite")
+  
+  print(emm)
+  
+  emm_mean <- emm$emmeans %>% data.frame()
+
+  emm_pair <- emm$contrasts %>% 
+    data.frame() %>%
+    separate(contrast, c("group1", "group2")) %>%
+    filter(p.value < 0.05) %>%
+    mutate(
+      group1 = gsub("run", "", group1),
+      group2 = gsub("run", "", group2),
+      p.signif = case_when(
+        p.value < 0.001 ~ "***",
+        p.value < 0.01 ~ "**",
+        p.value < 0.05 ~ "*",
+      )
+    ) %>%
+    mutate(y.position = c(93, 85))
+  
+  # Main visualization
+  discovery_behavior_df %>%
+    ggplot(aes(x = run, y = feedback_score, group = run)) +
+    # geom_sina(aes(color = run), size = 1.5, alpha = 0.7) +
+    geom_jitter(aes(color = run), size = 1.5, alpha = 0.3, width = 0.15, height = 0) +
+    geom_linerange(data = emm_mean, aes(x = run, ymin = lower.CL, ymax = upper.CL), color = '#636363', alpha = 0.7, linewidth = 7, inherit.aes = F) +
+    geom_crossbar(data = emm_mean, aes(x = run, y = emmean, ymin = emmean, ymax = emmean), width = 0.5, linewidth = 0.8, color = 'black', inherit.aes = F) + 
+    stat_pvalue_manual(emm_pair, label = "p.signif", label.size = 10, bracket.size = 1.2, tip.length = 0, 
+                       bracket.nudge.y = -0.01) +
+    labs(x = "Run", y = "Estimated Feedback Score") +
+    scale_color_manual(values = c('1' = '#bdbdbd', '2' = '#bdbdbd', '3' = '#bdbdbd', '4' = '#bdbdbd', 
+                                  '5' = '#bdbdbd')) +
+    theme_bw() +
+    global_theme
+}
+```
+
+
+```{r fig.height=4, fig.width=3}
+plot_result_3_between_run_learning_discovery()
+# R console shows ANOVA results between two LME models, AICc scores, ANOVA table for the run-effect model, effect sizes, R2 scores, and emmeans
+```
+
+
+```{r}
+ggsave("./output/behavioral_analysis/result_3/between_run_learning_discovery.png", height = 4, width = 3)
+```
+
+#### Validation group
+
+```{r}
+plot_result_3_between_run_learning_validation <- function() {
+  # Two LME models
+  lmer_feedback_0 <- lmer(feedback_score ~ 1 + (1 | trial) + (1 | subject_id), data = validation_behavior_df, REML = F)
+  lmer_feedback_1 <- lmer(feedback_score ~ 1 + run + (1 | trial) + (1 | subject_id), data = validation_behavior_df, REML = F)
+  
+  # ANOVA between the two models
+  print(anova(lmer_feedback_0, lmer_feedback_1))
+  
+  # AICc
+  print(
+    aictab(
+      cand.set = list(lmer_feedback_0, lmer_feedback_1),
+      modnames = c("Random Intercept", "Run Effect")
+    )
+  )
+  
+  # ANOVA table
+  print(anova(lmer_feedback_1))
+  
+  print(glue('\n\n'))
+
+  # Effect size (Eta squared)
+  print(F_to_eta2(3.8002, 4, 616.28))
+
+  print(glue('\n\n'))
+
+  # R2
+  print(r2(lmer_feedback_1))
+  
+  print(glue('\n\n'))
+  
+  # Emmeans
+  emm <- emmeans(lmer_feedback_1, pairwise ~ run, adjust = "fdr", lmer.df = "satterthwaite")
+  
+  print(emm)
+  
+  emm_mean <- emm$emmeans %>% data.frame()
+
+  emm_pair <- emm$contrasts %>% 
+    data.frame() %>%
+    separate(contrast, c("group1", "group2")) %>%
+    filter(p.value < 0.05) %>%
+    mutate(
+      group1 = gsub("run", "", group1),
+      group2 = gsub("run", "", group2),
+      p.signif = case_when(
+        p.value < 0.001 ~ "***",
+        p.value < 0.01 ~ "**",
+        p.value < 0.05 ~ "*",
+      )
+    ) %>%
+    mutate(y.position = c(85, 77, 93))
+  
+  # Visualization
+  validation_behavior_df %>%
+    ggplot(aes(x = run, y = feedback_score, group = run)) +
+    geom_jitter(aes(color = run), size = 1.5, alpha = 0.3, width = 0.15, height = 0) +
+    geom_linerange(data = emm_mean, aes(x = run, ymin = lower.CL, ymax = upper.CL), color = '#636363', alpha = 0.7, size = 7, inherit.aes = F) +
+    geom_crossbar(data = emm_mean, aes(x = run, y = emmean, ymin = emmean, ymax = emmean), width = 0.5, linewidth = 0.8, color = 'black', inherit.aes = F) +
+    stat_pvalue_manual(emm_pair, label = "p.signif", label.size = 10, bracket.size = 1.2, tip.length = 0, 
+                       bracket.nudge.y = -0.01) +
+    labs(x = "Run", y = "Estimated Feedback Score") +
+    scale_color_manual(values = c('1' = '#bdbdbd', '2' = '#bdbdbd', '3' = '#bdbdbd', '4' = '#bdbdbd', 
+                                  '5' = '#bdbdbd')) +
+    theme_bw() +
+    global_theme
+}
+```
+
+```{r fig.height=4, fig.width=3}
+plot_result_3_between_run_learning_validation()
+```
+
+
+```{r}
+ggsave("./output/behavioral_analysis/result_3/between_run_learning_validation.png", height = 4, width = 3)
+```
+
+
+### Result 4: Between-trial learning (using moving average of feedback scores)
+
+#### Discovery group
+
+```{r}
+plot_result_4_between_trial_discovery <- function() {
+  # Compute moving averages of feedback scores (window size = 8 trials)
+  data_df <- discovery_behavior_df %>%
+    group_by(subject_id) %>%
+    arrange(subject_id, global_trial_index) %>%
+    mutate(ma = slide_dbl(feedback_score, mean, .before = 7, .after = 0, .complete = T)) %>%
+    ungroup() %>%
+    filter(global_trial_index >= 8) # Ignore trials less than 8
+  
+  # LME models with various polynomial Global Trial Index terms (up to quartic [n^4] models)
+  model_0 <- lmer(ma ~ 1 + (1 | subject_id), data = data_df, REML = FALSE)
+  model_1 <- lmer(ma ~ 1 + I(global_trial_index - 8) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_2 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_3 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + I((global_trial_index - 8)^3) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_4 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + I((global_trial_index - 8)^3) + I((global_trial_index - 8)^4) + (1 | subject_id), data = data_df, REML = FALSE)
+  
+  # ANOVA comparions between LME models
+  print(anova(model_0, model_1, model_2, model_3, model_4))
+  
+  print(glue('\n\n'))
+  
+  # Cubic model was the optimal model; compare it with the null model
+  print(anova(model_0, model_3))
+  
+  print(
+    aictab(
+      cand.set = list(model_0, model_1, model_2, model_3, model_4),
+      modnames = c("RI", "Trial", "Trial^2", "Trial^3", "Trial^4")
+    )
+  )
+  
+  # ANOVA table on the cubic model
+  print(anova(model_3))
+  
+  print(glue('\n\n'))
+  
+  # Effect size
+  print(effectsize::eta_squared(model_3))
+
+  print(glue('\n\n'))
+  
+  # R2
+  print(r2(model_3))
+  
+  print(glue('\n\n'))
+  
+  # Pull fixed parameters (i.e., coefficients) from the cubic model
+  model_params <- tidy(model_3, 'fixed')
+  
+  print(model_params)
+  
+  estimates <- model_params %>% pull(estimate)
+  
+  # Plot the (group mean) moving average scores (black solid line),
+  # 95% confidence interval of the moving averages (gray shaded area), and
+  # the optimal cubic model (orange solid line)
+  data_df %>%
+    ggplot(aes(x = global_trial_index, y = ma)) +
+    geom_hline(yintercept = 50, linetype = "dashed") +
+    geom_hline(yintercept = 55, linetype = "dashed") +
+    geom_hline(yintercept = 60, linetype = "dashed") +
+    stat_summary(geom = "ribbon", fun.data = mean_se, alpha = 0.5, fill = "#bdbdbd") +
+    geom_function(
+      fun = function(x) {
+        estimates[1] + estimates[2] * (x - 8) + estimates[3] * (x - 8) ** 2 + estimates[4] * (x - 8) ** 3
+      }, linewidth = 1.5, color = "#fdae6b") +
+    stat_summary(geom = "line", fun = "mean", linewidth = 1) +
+    geom_vline(xintercept = 8, linetype = "dashed") +
+    geom_vline(xintercept = 16, linetype = "dashed") +
+    geom_vline(xintercept = 24, linetype = "dashed") +
+    geom_vline(xintercept = 32, linetype = "dashed") +
+    geom_vline(xintercept = 40, linetype = "dashed") +
+    labs(x = "Global Trial Index", y = "Mean Feedback Score") +
+    scale_y_continuous(limits = c(44, 63), oob = scales::oob_keep) +
+    theme_bw() +
+    global_theme
+}
+```
+
+
+```{r fig.height=4, fig.width=3}
+plot_result_4_between_trial_discovery()
+# R console shows ANOVA results between polynomial models, direct ANOVA between the null and cubic model, AICc, ANOVA table of the cubic model, effect sizes, R2 scores
+# The printed dataframe shows fixed parameters of the cubic model
+```
+
+
+```{r}
+ggsave("./output/behavioral_analysis/result_4/between_trial_discovery.png", height = 4, width = 3)
+```
+
+
+#### Validation group
+
+```{r}
+plot_result_4_between_trial_validation <- function() {
+  # Moving average
+  data_df <- validation_behavior_df %>%
+    group_by(subject_id) %>%
+    arrange(subject_id, global_trial_index) %>%
+    mutate(ma = slide_dbl(feedback_score, mean, .before = 7, .after = 0, .complete = T)) %>%
+    ungroup() %>%
+    filter(global_trial_index >= 8)
+  
+  # Polynomial Global Trial models
+  model_0 <- lmer(ma ~ 1 + (1 | subject_id), data = data_df, REML = FALSE)
+  model_1 <- lmer(ma ~ 1 + I(global_trial_index - 8) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_2 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_3 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + I((global_trial_index - 8)^3) + (1 | subject_id), data = data_df, REML = FALSE)
+  model_4 <- lmer(ma ~ 1 + I(global_trial_index - 8) + I((global_trial_index - 8)^2) + I((global_trial_index - 8)^3) + I((global_trial_index - 8)^4) + (1 | subject_id), data = data_df, REML = FALSE)
+  
+  # ANOVA (all models)
+  print(anova(model_0, model_1, model_2, model_3, model_4))
+  
+  print(glue('\n\n'))
+  
+  # ANOVA (null vs. cubic model)
+  print(anova(model_0, model_3))
+  
+  # AICc
+  print(
+    aictab(
+      cand.set = list(model_0, model_1, model_2, model_3, model_4),
+      modnames = c("RI", "Trial", "Trial^2", "Trial^3", "Trial^4")
+    )
+  )
+  
+  # ANOVA table
+  print(anova(model_3))
+  
+  print(glue('\n\n'))
+
+  # Effect size
+  print(effectsize::eta_squared(model_3))
+
+  print(glue('\n\n'))
+  
+  # R2
+  print(r2(model_3))
+  
+  print(glue('\n\n'))
+  
+  # Model parameters
+  model_params <- tidy(model_3, 'fixed')
+  
+  print(model_params)
+  
+  estimates <- model_params %>% pull(estimate)
+  
+  # Visualization
+  data_df %>%
+    ggplot(aes(x = global_trial_index, y = ma)) +
+    geom_hline(yintercept = 50, linetype = "dashed") +
+    geom_hline(yintercept = 55, linetype = "dashed") +
+    geom_hline(yintercept = 60, linetype = "dashed") +
+    stat_summary(geom = "ribbon", fun.data = mean_se, alpha = 0.5, fill = "#bdbdbd") +
+    geom_function(
+      fun = function(x) {
+        estimates[1] + estimates[2] * (x - 8) + estimates[3] * (x - 8) ** 2 + estimates[4] * (x - 8) ** 3
+      }, linewidth = 1.5, color = "#fdae6b") +
+    stat_summary(geom = "line", fun = "mean", linewidth = 1) +
+    geom_vline(xintercept = 8, linetype = "dashed") +
+    geom_vline(xintercept = 16, linetype = "dashed") +
+    geom_vline(xintercept = 24, linetype = "dashed") +
+    geom_vline(xintercept = 32, linetype = "dashed") +
+    geom_vline(xintercept = 40, linetype = "dashed") +
+    labs(x = "Global Trial Index", y = "Mean Feedback Score") +
+    scale_y_continuous(limits = c(44, 63), oob = scales::oob_keep) +
+    theme_bw() +
+    global_theme
+}
+```
+
+
+```{r fig.height=4, fig.width=3}
+plot_result_4_between_trial_validation()
+```
+
+```{r}
+ggsave("./output/behavioral_analysis/result_4/between_trial_validation.png", height = 4, width = 3)
+```
+
+
+

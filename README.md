@@ -1,12 +1,20 @@
 # Photographer Paradigm Data Analysis Scripts
 
-Python/R scripts for neural/behavioral data from the Photographer Paradigm
+Python/R scripts for neural/behavioral data from the [Photographer Paradigm](https://github.com/constantjin/photographer-experimental-paradigm)
+
+## References
+
+  - **Jin, S.**, Lee, J., & Lee, J. H. Historical Feedback Representations Robustly Guide Learning. Organization for Human Brain Mapping (OHBM) 2024. Seoul, Korea.
+  - **Jin, S.**, Lee, J., & Lee, J. H. How to Be a Good Photographer: Multi-modal Learning In a Real-life Environment. OHBM 2023. Montreal, Canada. **[Oral Presentation]**
 
 ## Requirements
 
 ### Neural and behavioral data
 
 The orignal neural and behavioral data acquired from the Photographer experiment through 2022 and 2023 are available on request from the corresponding author. Please contact us with respect to the BSPL "[Contact Us](https://bspl-ku.github.io/contact/)" page. 
+
+- **Update**
+  - Preprocessed behavioral data, cross-validated cluster mask files, and second-level RSA results for the second-level analysis or R visualization scripts would be open to public after our manuscript is submitted.
 
 ### Dependencies
 
@@ -151,19 +159,20 @@ First-level analysis-related arguments:
 
 - Data
   - `photographer_exploration_info.csv`
-    - For exploration model RDMs, we extracted exploration times, exploration distances, and coordinates for the capture locations from the etime files. You can find the data file in `/second-level/data/`.
+    - For exploration model RDMs, we extracted exploration times, exploration distances, and coordinates for the capture locations from the etime files. This file is needed for the second-level RSA.
 
 - Outputs
   - Cross-validated (feedback history) RSA cluster masks
     - For the Recent-2 Trial, Recent-3 Trial, and Feedback History (Recent-2 Trial & Recent-3 Trial) models
-    - Stored in `second-level/output/cross_validated_cluster_mask`
-    - We identified two main RSA clusters, the MiOG and IFG, representing both Recent-2 Trial and Recent-3 Trial models. Please check `second-level/output/cross_validated_cluster_mask/recent_2_and_recent_3_trial` directory.
+    - Will be stored in `second-level/output/cross_validated_cluster_mask`
+    - We additionally identified two main RSA clusters, the MiOG and IFG, representing both Recent-2 Trial and Recent-3 Trial models.
 
   - CSV files for second-level RSA results
     - Note: Second-level RSA are restricted in the Feedback History clusters (i.e., MiOG and IFG regions).
-    - RSA using exploration models: `second-level/output/second_level_rsa/exploration_second_level`
-    - Partial correlation RSA using feedback history models: `second-level/output/second_level_rsa/partial_feedback_history_second_level`
-    - Partial correlation RSA using Capture Distance model: `second-level/output/second_level_rsa/partial_feedback_history_second_level`
+    - Paths for storing RSA results
+      - RSA using exploration models: `second-level/output/second_level_rsa/exploration_second_level`
+      - Partial correlation RSA using feedback history models: `second-level/output/second_level_rsa/partial_feedback_history_second_level`
+      - Partial correlation RSA using Capture Distance model: `second-level/output/second_level_rsa/partial_feedback_history_second_level`
 
 ### Acknowledgments
 
@@ -195,7 +204,7 @@ First-level analysis-related arguments:
 
 - Data
   - `group_*_behavior_feedback.csv`
-    - Preprocessed behavioral data files from the `behavior.prepare_behavioral_data` task of the first-level analysis. You can find the CSV files in `R_visualization/data/behavioral_data`.
+    - Preprocessed behavioral data files from the `behavior.prepare_behavioral_data` task of the first-level analysis.
   
   - Second-level RSA CSV files
     - The same data copied from the second-level analysis (see the [Data and outputs](#data-and-outputs) section in the second-level analysis).
